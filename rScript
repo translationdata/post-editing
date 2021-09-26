@@ -1,0 +1,26 @@
+Sample R scripts with Pause to word ratio
+###Getting packages needed ready
+library(lme4)
+library(lmerTest) 
+library(effects)
+library(carData)
+library(emmeans)
+####Datafile:PEHTdifficulty
+####Setting the independent variables of Text (ST complexity levels) and Task (Task type) as factors
+PEHTdifficulty$Text<- as.factor(PEHTdifficulty$Text) 
+PEHTdifficulty$Task<- as.factor(PEHTdifficulty$Task)
+### Setting the dependent variable PWR (Pause to word ratio) as numeric
+PEHTdifficulty$PWR<- as.numeric(PEHTdifficulty$PWR)
+#### Building a null model with only the dependent variable and random variables
+PWR00<- lmer(PWR~1 +(1|Participant)+(1|STNo),data= PEHTdifficulty)
+### Building a lme model with both the independent variables and random variables
+PWR01<- lmer(PWR~Text * Task +(1| Participant)+(1|STNo),data=PEHTdifficulty)
+##Model selection: Comparing AIC values of the two models
+AIC(PWR00,PWR01)
+###Checking results of the model with lower AIC value
+summary(PWR01)
+anova(PWR01)
+###Post-hoc analysis
+emmeans(PWR01, list(pairwise ~ Text*Task), adjust = "tukey")
+### Plotting the model
+plot(allEffects(PWR01),xlab="Task type", ylab="Pause to word ratio",main="Source text*Task type effect plot")
