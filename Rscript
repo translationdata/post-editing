@@ -1,34 +1,203 @@
-Sample R scripts with Task speed
-###Getting packages needed ready
-library(lme4)
-library(lmerTest) 
-library(effects)
+###R scripts used for data analysis
+library(car)
+library(ggplot2)
 library(carData)
+library(lme4)
+library(effects)
+library(Matrix)
+library(lmerTest)
 library(emmeans)
+
 ####Datafile:PEHTdifficulty
-####Setting the independent variables of Text (ST complexity levels) and Task (Task type) as factors
-PEHTdifficulty$Text<- as.factor(PEHTdifficulty$Text) 
-PEHTdifficulty$Task<- as.factor(PEHTdifficulty$Task)
-### Setting the dependent variable TS (Task speed) as numeric
-PEHTdifficulty$TS<- as.numeric(PEHTdifficulty$TS)
-### Building a null model with only the dependent variable and random variables
-TS00<- lmer(TS~1 +(1|Participant)+(1|STNo),data= PEHTdifficulty)
-### Building a lme model with both the independent variables and random variables
-TS01<- lmer(TS~Text * Task +(1| Participant)+(1|STNo),data=PEHTdifficulty)
-##Model selection: Likelihood-ratio test and AIC 
-anova(TS00,TS01)
-AIC(TS00,TS01)
-###Model selection: Checking whether the random variables should be included
-TS01<- lmer(TS~Text * Task +(1| Participant)+(1|STNo),data=PEHTdifficulty)
-TS01P<- lmer(TS~Text * Task +(1| Participant),data= PEHTdifficulty)
-TS01S<- lmer(TS~Text * Task +(1|STNo),data= PEHTdifficulty)
-TS00<- lm(TS~Text * Task,data= PEHTdifficulty)
-anova(TS01,TS01P,TS01S, TS00) ### Likelihood-ratio test
-AIC(TS01,TS01P,TS01S, TS00)
-###Checking results of the model with the lowest AIC value
-summary(TS01)
-anova(TS01)
-###Post-hoc analysis
-emmeans(TS01, list(pairwise ~ Text*Task), adjust = "tukey")
+####Setting the independent variables of ST (ST complexity levels) and Task (Task type) as factors
+PEHTdifficulty$ Task <- as.factor(PEHTdifficulty$ Task)
+PEHTdifficulty$ST <- as.factor(PEHTdifficulty$ST)
+### Setting the eight dependent variables invesitigated as numeric variables
+PEHTdifficulty$PR <- as.numeric(PEHTdifficulty$PR)#Perceived difficulty
+PEHTdifficulty$FC <- as.numeric(PEHTdifficulty$FC)#Total fixcation counts
+PEHTdifficulty$FCS <- as.numeric(PEHTdifficulty$FCS)# Total fixcation counts on ST
+PEHTdifficulty$FCT<- as.numeric(PEHTdifficulty$FCT) # Total fixcation counts on TT
+PEHTdifficulty$KEY <- as.numeric(PEHTdifficulty$KEY)#Total keystrokes
+PEHTdifficulty$Speed <- as.numeric(PEHTdifficulty$Speed)#Speed
+PEHTdifficulty$AC <- as.numeric(PEHTdifficulty$AC)#Errors in accuracy
+PEHTdifficulty$FL <- as.numeric(PEHTdifficulty$FL) #Errors in fluency
+############################
+##Model 1: Perceived difficulty (PR)
+###########################
+###Test for normality
+hist(PEHTdifficulty$PR)
+shapiro.test(PEHTdifficulty$PR)#p=0.0002 p>0.05
+### Model selection using Liklihood ratio test 
+### Building a null model with only dependent variable and random variable
+PR0<- lmer(SR ~1 +(1|Part),data=PEHTdifficulty)
+### Building a lme model with both independent variables and random variable
+PR1<- lmer(SR ~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(PR1, PR2) ##note that modles were refitted with ML (instead of REML) AIC=411 444
+### Checking whether the random variable should be included
+PR2<- lm(SR ~ST * Task,data=PEHTdifficulty)
+anova(PR1, PR2) ##note that modles were refitted with ML (instead of REML) AIC=411 418
+###homogeneity of variance test for the selected model
+plot(PR1)
+leveneTest(PR ~ST * Task,data=Perceived difficulty)##p=0.034*
 ### Plotting the model
-plot(allEffects(TS01),xlab="Task type", ylab="Task speed",main="Source text*Task type effect plot")
+plot(allEffects(PR1))
+plot(allEffects(PR1),xlab="Task type", ylab="Perceived difficulty",main="ST complexity*Task type effect plot")
+summary(PR1)
+###Type III tests of fixed effects by anova 
+anova(PR1)
+###Post-hoc analysis
+emmeans(PR1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+#######################
+#Model 2: Total fixation counts(FC)
+######################
+hist(PEHTdifficulty$FC)
+shapiro.test(PEHTdifficulty$FC)#0.0000
+shapiro.test(log(PEHTdifficulty$FC))#0.09
+hist(log(PEHTdifficulty$FixC)$FC)
+shapiro.test(sqrt(PEHTdifficulty$FC))#0.13
+hist(sqrt (PEHTdifficulty$FC)$FC)
+
+FC0<- lmer(sqrt(FC)~1 +(1|Part),data=PEHTdifficulty)
+FC1<- lmer(sqrt(FC)~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(FC0,FC1)
+FC2<- lm(sqrt(FC)~ST * Task,data=PEHTdifficulty)
+anova(FC1,FC2)
+
+plot(FC1)
+leveneTest(sqrt(FC)~ST * Task,data=PEHTdifficulty)#p=0.28
+
+summary(FC1)
+anova(FC1)
+plot(allEffects(FC1))
+plot(allEffects(FC1),xlab="Task type", ylab="sqrt(Total fixation counts)",main="ST complexity*Task type effect plot")
+emmeans(FC1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+#########################
+#Model3: Total fixation counts ST(FCS)
+#########################
+shapiro.test(PEHTdifficulty$FCS)#0.0000
+shapiro.test(sqrt(PEHTdifficulty$FCS))#0.0096
+shapiro.test(log(PEHTdifficulty$FCS))#NA
+FCS0<- lmer(sqrt(FCS)~1 +(1|Part),data=PEHTdifficulty)
+FCS1<- lmer(sqrt(FCS)~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(FCS0, FCS1)
+FCS2<- lm(sqrt(FCS)~ST * Task,data=PEHTdifficulty)
+anova(FCS1, FCS2)
+summary(FCS1)
+anova(FCS1)
+plot(allEffects(FCS1))
+plot(allEffects(FCS1),xlab="Task type", ylab="sqrt(Total fixation counts on ST)",main="ST complexity*Task type effect plot")
+emmeans(FCS1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+########################
+# Model4:Total fixation count on TT (FCT)
+########################
+hist(PEHTdifficulty$FCT)
+shapiro.test(PEHTdifficulty$FCT)#0.0000
+shapiro.test(log(PEHTdifficulty$FCT))#0.002
+hist(log(PEHTdifficulty$FCT))
+shapiro.test(sqrt(PEHTdifficulty$FCT))#0.78
+hist(sqrt(PEHTdifficulty$FCT))
+
+FCT0<- lmer(sqrt(FCT)~1 +(1|Part),data=PEHTdifficulty)
+FCT1<- lmer(sqrt(FCT)~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(FCT0,FCT1)
+FCT2<- lm(sqrt(FCT)~ST * Task,data=PEHTdifficulty)
+anova(FCT1,FCT2)
+plot(FCT1)
+leveneTest(sqrt(FCT)~ST * Task,data=PEHTdifficulty)#p=0.99
+summary(FCT1)
+anova(FCT1)
+plot(allEffects(FCT1))
+plot(allEffects(FCT1),xlab="Task type", ylab="sqrt(Total fixation counts on TT)",main="ST complexity*Task type effect plot")
+emmeans(FCT1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+#########################
+### Model5:Total keystrokes(KEY)
+#########################
+shapiro.test(PEHTdifficulty$KEY)#0.056
+hist(PEHTdifficulty$KEY)
+KEY0<- lmer(KEY~1 +(1|Part),data=PEHTdifficulty)
+KEY1<- lmer(KEY~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(KEY0,KEY1)
+KEY2<- lm(KEY~ST * Task,data=PEHTdifficulty)
+anova(KEY1,KEY2)
+
+plot(KEY1)#hompgeneity of variance test
+leveneTest(KEY~ST * Task,data=PEHTdifficulty)#p=0.78
+
+summary(KEY1)
+anova(KEY1)
+plot(allEffects(KEY1))
+plot(allEffects(KEY1),xlab="Task type", ylab="Keystrokes",main="ST complexity*Task type effect plot")
+emmeans(KEY1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+###################
+#### Model6: Speed
+##################
+###01Normality check
+hist(PEHTdifficulty$Speed)
+shapiro.test(PEHTdifficulty$Speed) # p<0.001 
+shapiro.test(log(PEHTdifficulty$Speed))#p-value = 0.4504
+hist(log(PEHTdifficulty$Speed))
+shapiro.test(sqrt(PEHTdifficulty$Speed))#p=0.000
+hist(sqrt(PEHTdifficulty$Speed))
+
+TS0<- lmer(log(Speed)~1 +(1|Part),data=PEHTdifficulty)
+TS1<- lmer(log(Speed)~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(TS0, TS1)
+TS2<- lm(log(Speed)~ST * Task,data=PEHTdifficulty)
+anova(TS1, TS2)
+plot(TS1)
+leveneTest(log(Speed)~ST * Task,data=PEHTdifficulty)#0.62
+plot(allEffects(TS1))
+plot(allEffects(TS1),xlab="Task type", ylab="log(Task speed)",main="Source text*Task type effect plot")
+summary(TS1)
+anova(TS1)
+emmeans(TS1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+#########################
+###Model7:Errors in accuracy (AC)
+##########################
+hist(PEHTdifficulty$AC)
+shapiro.test(PEHTdifficulty$AC)#0.0000
+shapiro.test(sqrt(PEHTdifficulty$AC))#0.26
+hist(sqrt(PEHTdifficulty$AC))
+shapiro.test(log(PEHTdifficulty$AC))#NAN
+
+AC0<- lm(sqrt(AC)~ST * Task,data=PEHTdifficulty)
+AC1<- lmer(sqrt(AC) ~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(AC0,AC1)
+AC2<- lmer(sqrt(AC)~1 +(1|Part),data=PEHTdifficulty)
+anova(AC1,AC2)##AIC p=
+plot(AC1)
+leveneTest(sqrt(AC) ~ST * Task,data=PEHTdifficulty)
+plot(allEffects(AC1))
+plot(allEffects(AC1),xlab="Task type", ylab="sqrt(Errors in accuracy)",main="ST complexity*Task type effect plot")
+summary(AC1)
+anova(AC1)
+emmeans(AC1, list(pairwise ~ ST*Task), adjust = "tukey")
+
+########################
+###Model8: ERROR in fluency(FL)
+########################
+hist(PEHTdifficulty$FluencyA)
+shapiro.test(PEHTdifficulty$FluencyA)#0.0000
+hist(sqrt(PEHTdifficulty$FluencyA))
+shapiro.test(sqrt(PEHTdifficulty$FluencyA))#0.0000
+hist(log(PEHTdifficulty$FluencyA))#明显效果更好
+shapiro.test(log(PEHTdifficulty$FluencyA))#NA
+
+FL0<- lmer(sqrt(FL)~1 +(1|Part),data=PEHTdifficulty)
+FL1<- lmer(sqrt(FL) ~ST * Task +(1|Part),data=PEHTdifficulty)
+anova(FL0,FL1)
+FL2<- lm(sqrt(FL)~ST * Task,data=PEHTdifficulty)
+anova(FL1,FL2)
+plot(FL1)
+leveneTest(FL~ST * Task,data=PEHTdifficulty)
+plot(allEffects(FL),xlab="Task type", ylab="sqrt(Errors in fluency)",main="ST complexity*Task type effect plot")
+plot(allEffects(FL1))
+summary(FL1)
+anova(FL1)
+emmeans(FL1, list(pairwise ~ ST*Task), adjust = "tukey")
