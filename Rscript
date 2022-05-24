@@ -38,7 +38,7 @@ PR2<- lm(SR ~ST * Task,data=PEHTdifficulty)
 anova(PR1, PR2) ##note that modles were refitted with ML (instead of REML)
 ###homogeneity of variance test for the selected model
 plot(PR1)
-leveneTest(PR ~ST * Task,data=Perceived difficulty)
+leveneTest(PR ~ST * Task,data=PEHTdifficult)
 ### Plotting the model
 plot(allEffects(PR1))
 plot(allEffects(PR1),xlab="Task type", ylab="Perceived difficulty",main="ST complexity*Task type effect plot")
